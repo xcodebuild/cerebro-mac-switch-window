@@ -4,6 +4,12 @@
 
 ![](./screenshot.png)
 
+## Install
+
+```shell
+cd ~/Library/Application\ Support/Cerebro/plugins/
+yarn add cerebro-mac-switch-window
+```
 ## Usage
 
 In Cerebro, type `win something` to find your window and browser tab. Use <kbd>↩</kbd> to kill selected process.
