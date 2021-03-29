@@ -39,27 +39,40 @@ function getIcon(processPath) {
   return match ? match[0] : DEFAULT_ICON;
 }
 
-const findWindow = memoize((searchWindowName) => {
-  return (async () => {
-    const execPromise = new Promise(resolve => {
-      const dirName = eval('__dirname');
-      execFile(path.join(dirName, '../vendor/EnumWindows'), [`--search=${searchWindowName}`], (err, stdout, stderr) => {
-        const output = stdout.toString();
-        if (err || stderr) {
-          alert(output);
+let lastCache = [];
+
+const dirName = eval('__dirname');
+
+function updateCache() {
+  return new Promise(resolve => {
+    execFile(path.join(dirName, '../vendor/EnumWindows'), [`--search=""`], (err, stdout, stderr) => {
+      const output = stdout.toString();
+      if (err || stderr) {
+        alert(output);
+      }
+      parseString(output, (err, data) => {
+        if (err) {
+          console.error(err);
         }
-        parseString(output, (err, data) => {
-          if (err) {
-            console.error(err);
-          }
-          resolve(data);
-        });
+        lastCache = data.items && data.items.item || [];
+        resolve();
       });
     });
-    const json = await execPromise;
-    // xml => json
-    return json && json.items && json.items.item;
-  })();
+  });
+  
+}
+
+const findWindow = memoize((searchWindowName, update) => {
+  const load = () => {
+    const items = lastCache.filter(item => {
+      return item.subtitle[0].indexOf(searchWindowName) !== -1
+    });
+  
+    update(items);
+  };
+  // search first with cache
+  load();
+  updateCache().then(load);
 }, MEMOIZE_OPTIONS);
 
 /**
@@ -76,10 +89,10 @@ const fn = ({term, display}) => {
     if (!searchWindowName) {
       return;
     }
-    findWindow(searchWindowName).then(list => {
+    findWindow(searchWindowName, list => {
       const results = list.map(({uid, title, subtitle, icon, $}) => ({
         title: title[0],
-        id: $.uid,
+        id: $.arg,
         icon: icon[0],
         subtitle: subtitle[0],
         onSelect: () => {

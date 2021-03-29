@@ -1,10 +1,12 @@
-# cerebro-kill
+# cerebro-mac-switch-window
 
 > [Cerebro](http://www.cerebroapp.com) plugin to find window and switch
 
+![](./screenshot.png)
+
 ## Usage
 
-In Cerebro, type `win something` to find your window. Use <kbd>↩</kbd> to kill selected process.
+In Cerebro, type `win something` to find your window and browser tab. Use <kbd>↩</kbd> to kill selected process.
 
 ## Related
 
