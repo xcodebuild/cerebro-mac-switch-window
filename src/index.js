@@ -2,8 +2,12 @@
 
 const { shellCommand, memoize } = require('cerebro-tools');
 const pluginIcon = require('./icon.png');
+const {execFile} = require('child_process');
+const path = require('path');
+const parseString = require('xml2js').parseString;
+const applescript = require('applescript');
 
-const REGEXP = /kill\s(.*)/;
+const REGEXP = /win\s(.*)/;
 const LIST_CMD = 'ps -A -o pid -o %cpu -o comm | sed 1d';
 
 const DEFAULT_ICON = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ExecutableBinaryIcon.icns';
@@ -14,14 +18,20 @@ const MEMOIZE_OPTIONS = {
   preFetch: true
 }
 
-/**
- * Parse line of ps command
- * @param {String} line of ps result
- * @return {Array} array of processId, processName and processPath
- */
-function parsePsResult(str) {
-  return str.match(/(\d+)\s+(\d+[\.|,]\d+)\s+(.*)/).slice(1);
-}
+const defaultOptions = {
+  attributeNamePrefix : "@_",
+  attrNodeName: "@", //default is false
+  textNodeName : "#text",
+  ignoreAttributes : true,
+  cdataTagName: "__cdata", //default is false
+  cdataPositionChar: "\\c",
+  format: false,
+  indentBy: "  ",
+  supressEmptyNode: false,
+  tagValueProcessor: a=> he.encode(a, { useNamedReferences: true}),// default is a=>a
+  attrValueProcessor: a=> he.encode(a, {isAttributeValue: isAttribute, useNamedReferences: true})// default is a=>a
+};
+
 
 function getIcon(processPath) {
   const match = processPath.match(/^.*?\.app/);
@@ -29,23 +39,27 @@ function getIcon(processPath) {
   return match ? match[0] : DEFAULT_ICON;
 }
 
-const findProcess = memoize((searchProcessName) => {
-  const regexp = new RegExp(`[^\/]*${searchProcessName}[^\/]*$`, 'i');
-  return shellCommand(LIST_CMD).then(result => (
-    result
-      .split('\n')
-      .filter(line => line.match(regexp))
-      .map(str => {
-        const [id, cpu, path] = parsePsResult(str);
-        const icon = getIcon(path);
-        const title = path.match(regexp)[0];
-        return { id, title, cpu, path, icon };
-      })
-      .sort((a, b) =>
-        -a.cpu > -b.cpu ? 1 : (-a.cpu < -b.cpu ? -1 : 0)
-      )
-    )
-  )
+const findWindow = memoize((searchWindowName) => {
+  return (async () => {
+    const execPromise = new Promise(resolve => {
+      const dirName = eval('__dirname');
+      execFile(path.join(dirName, '../vendor/EnumWindows'), [`--search=${searchWindowName}`], (err, stdout, stderr) => {
+        const output = stdout.toString();
+        if (err || stderr) {
+          alert(output);
+        }
+        parseString(output, (err, data) => {
+          if (err) {
+            console.error(err);
+          }
+          resolve(data);
+        });
+      });
+    });
+    const json = await execPromise;
+    // xml => json
+    return json && json.items && json.items.item;
+  })();
 }, MEMOIZE_OPTIONS);
 
 /**
@@ -57,17 +71,79 @@ const findProcess = memoize((searchProcessName) => {
 const fn = ({term, display}) => {
   const match = term.match(REGEXP);
   if (match) {
-    const searchProcessName = match[1];
-    if (!searchProcessName) {
+    const searchWindowName = match[1];
+    
+    if (!searchWindowName) {
       return;
     }
-    findProcess(searchProcessName).then(list => {
-      const results = list.map(({id, title, cpu, path, icon}) => ({
-        title,
-        id,
-        icon,
-        subtitle: `${cpu}% CPU @ ${path}`,
-        onSelect: () => shellCommand(`kill -9 ${id}`)
+    findWindow(searchWindowName).then(list => {
+      const results = list.map(({uid, title, subtitle, icon, $}) => ({
+        title: title[0],
+        id: $.uid,
+        icon: icon[0],
+        subtitle: subtitle[0],
+        onSelect: () => {
+          applescript.execString(`
+          set q to "${$.arg}"
+          set argv to extract_argv(q, "|||||")
+          
+          set proc to item 1 of argv
+          set tabIndex to item 2 of argv as integer
+          set windowName to item 3 of argv
+          
+          try
+            tell application "System Events"
+              with timeout of 0.1 seconds
+                tell process proc to perform action "AXRaise" of window windowName
+              end timeout
+            end tell
+          end try
+          
+          tell application proc
+            activate
+          end tell
+          
+          if proc = "Safari Technology Preview" then
+            tell front window of application "Safari Technology Preview"
+              set current tab to tab tabIndex
+            end tell
+          end if
+
+          if proc = "Google Chrome" then
+            tell application "Google Chrome"
+              activate
+              set win_List to every window
+              repeat with win in win_List
+                if title of win = windowName then
+                  set index of win to 1
+                  set active tab index of win to tabIndex
+                end if
+              end repeat
+            end tell
+          end if
+
+          if proc = "Microsoft Edge" then
+            tell application "Microsoft Edge"
+              activate
+              set win_List to every window
+              repeat with win in win_List
+                if title of win = windowName then
+                  set index of win to 1
+                  set active tab index of win to tabIndex
+                end if
+              end repeat
+            end tell
+          end if
+          
+          on extract_argv(source_string, new_delimiter)
+            set backup to AppleScript's text item delimiters
+            set AppleScript's text item delimiters to new_delimiter
+            set argv to every text item of source_string
+            set AppleScript's text item delimiters to backup
+            return argv
+          end extract_argv
+          `);
+        }
       }));
       display(results);
     });
@@ -75,8 +151,8 @@ const fn = ({term, display}) => {
 };
 
 module.exports = {
-  name: 'Kill process by name',
-  keyword: 'kill',
+  name: 'Switch Windows',
+  keyword: 'win',
   icon: pluginIcon,
   fn
 };

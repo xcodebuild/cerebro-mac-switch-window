@@ -1,13 +1,11 @@
 {
-  "name": "cerebro-kill",
-  "version": "0.1.1",
-  "description": "Cerebro plugin to kill process by name",
+  "name": "cerebro-mac-switch-window",
+  "version": "0.1.2",
+  "description": "Cerebro plugin to switch window on macOS",
   "license": "MIT",
-  "repository": "KELiON/cerebro-kill",
+  "repository": "xcodebuild/cerebro-mac-switch-window",
   "author": {
-    "name": "Alexandr Subbotin",
-    "email": "kelionweb@gmail.com",
-    "url": "asubbotin.ru"
+    "email": "me@xcodebuild.com"
   },
   "engines": {
     "node": ">=4"
@@ -33,5 +31,11 @@
     "cerebro-tools": "^0.1.0",
     "url-loader": "^0.5.7",
     "webpack": "2.1.0-beta.27"
+  },
+  "dependencies": {
+    "applescript": "^1.0.0",
+    "fast-xml-parser": "^3.19.0",
+    "he": "^1.2.0",
+    "xml2js": "^0.4.23"
   }
 }

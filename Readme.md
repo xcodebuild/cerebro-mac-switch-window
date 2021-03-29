@@ -1,12 +1,10 @@
 # cerebro-kill
 
-> [Cerebro](http://www.cerebroapp.com) plugin to kill process by name
-
-![](screenshot.png)
+> [Cerebro](http://www.cerebroapp.com) plugin to find window and switch
 
 ## Usage
 
-In Cerebro, type `kill something` to find your process, like `kill electron`. Use <kbd>↩</kbd> to kill selected process.
+In Cerebro, type `win something` to find your window. Use <kbd>↩</kbd> to kill selected process.
 
 ## Related
 
@@ -15,4 +13,10 @@ In Cerebro, type `kill something` to find your process, like `kill electron`. Us
 
 ## License
 
-MIT © [Alexandr Subbotin](http://asubbotin.ru)
+MIT © [xcodebuild](https://github.com/xcodebuild)
+
+## Related
+
+### EnumWindows & Apple Script
+
+Code for EnumWindows & Apple Script is fork from https://github.com/mandrigin/AlfredSwitchWindows
