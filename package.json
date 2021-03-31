@@ -1,6 +1,6 @@
 {
   "name": "cerebro-mac-switch-window",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Cerebro plugin to switch window on macOS",
   "license": "MIT",
   "repository": "xcodebuild/cerebro-mac-switch-window",
@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "applescript": "^1.0.0",
-    "pinyin": "^2.9.1",
     "tiny-pinyin": "^1.3.2",
     "xml2js": "^0.4.23"
   }
